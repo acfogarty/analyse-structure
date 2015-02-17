@@ -105,8 +105,8 @@ double Calc::calcDist(std::vector<AtomEntry> atomEntries, double cell[3], std::v
    double x1,y1,z1,x2,y2,z2;
 
    if (indices.size()!=2) {std::cout<<"Error in calcDist!"<<std::endl;}
-   int index1=indices.at(0);
-   int index2=indices.at(1);
+   int index1=indices.at(0)-1;
+   int index2=indices.at(1)-1;
    x1=atomEntries.at(index1).coords[0];
    y1=atomEntries.at(index1).coords[1];
    z1=atomEntries.at(index1).coords[2];
@@ -134,9 +134,9 @@ double Calc::calcAngle(std::vector<AtomEntry> atomEntries, double cell[3], std::
    Vec3D vec21,vec23;
    
    if (indices.size()!=3) {std::cout<<"Error in calcAngle!"<<std::endl;}
-   int index1=indices.at(0);
-   int index2=indices.at(1);
-   int index3=indices.at(2);
+   int index1=indices.at(0)-1;
+   int index2=indices.at(1)-1;
+   int index3=indices.at(2)-1;
 
    dx = atomEntries.at(index1).coords[0]-atomEntries.at(index2).coords[0];
    vec21[0] = dx - rint(dx/cell[0])*cell[0];
@@ -165,13 +165,13 @@ double Calc::calcDihedral(std::vector<AtomEntry> atomEntries, double cell[3], st
 
    double phi,dx,dy,dz,b;
    Vec3D vec12,vec23,vec34;
-   Vec3D vectemp1,vectemp2;
+   Vec3D vectemp1,vectemp2,vectemp3;
 
    if (indices.size()!=4) {std::cout<<"Error in calcDihedral!"<<std::endl;}
-   int index1=indices.at(0);
-   int index2=indices.at(1);
-   int index3=indices.at(2);
-   int index4=indices.at(3);
+   int index1=indices.at(0)-1;
+   int index2=indices.at(1)-1;
+   int index3=indices.at(2)-1;
+   int index4=indices.at(3)-1;
 
    dx = atomEntries.at(index2).coords[0]-atomEntries.at(index1).coords[0];
    vec12[0] = dx - rint(dx/cell[0])*cell[0];
@@ -200,6 +200,15 @@ double Calc::calcDihedral(std::vector<AtomEntry> atomEntries, double cell[3], st
    b = vectemp1*vectemp2/(vectemp1.len()*vectemp2.len());
 
    phi=acos(b);
+
+   //get sign
+   vectemp3 = vectemp1.cross(vectemp2);
+   double signcheck = vectemp3*vec23;
+   if (signcheck > 0.0) signcheck = 1.0;
+   else if (signcheck < 0.0) signcheck = -1.0;
+   else signcheck = 0.0;
+
+   phi=phi*signcheck;
    phi=phi/3.14159*180.0;
    return phi;
 
