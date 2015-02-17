@@ -1,0 +1,8 @@
+/*** input trajectory file ***/
+test.gro !grofilename
+ !natoms
+ !nframes
+/*** distances,angles and dihedrals to calculate ***/
+ !nmeasurements
+/*** type, indices of atoms involved ***/
+DIH 1 2 3 4
