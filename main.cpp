@@ -32,7 +32,18 @@ main() {
 
   for (int i=0;i<system.nframes;i++)
   {
-     system.readGroFrame(false);
+     switch(system.coordFileType)
+     {
+       case(System::filetypeEnum::GRO):
+         system.readGroFrame(false);
+         break;
+       case(System::filetypeEnum::PDB):
+         system.readPdbFrame();
+         break;
+       default:
+         std::cout<<"Error in main!"<<std::endl;
+         //TODO
+     }
      if ((i%system.nskip) != 0) continue;
      ncount+=1;
      for (int j=0;j<analysisInfo.nmeasurements;j++)
@@ -43,13 +54,13 @@ main() {
        std::stringstream descriptionStream;
        switch(analysisInfo.measurementEntries[j].mtype)
        {
-          case(AnalysisInfo::measurementtypes::BON):
+          case(AnalysisInfo::measurementtypeEnum::BON):
              value=Calc::calcDist(system.atomEntries, system.cell, analysisInfo.measurementEntries[j].atomindices);
              break;
-          case(AnalysisInfo::measurementtypes::ANG):
+          case(AnalysisInfo::measurementtypeEnum::ANG):
              value=Calc::calcAngle(system.atomEntries, system.cell, analysisInfo.measurementEntries[j].atomindices);
              break;
-          case(AnalysisInfo::measurementtypes::DIH):
+          case(AnalysisInfo::measurementtypeEnum::DIH):
              value=Calc::calcDihedral(system.atomEntries, system.cell, analysisInfo.measurementEntries[j].atomindices);
              break;
           default:
@@ -74,13 +85,13 @@ main() {
      std::stringstream descriptionStream;
      switch(analysisInfo.measurementEntries[j].mtype)
      {
-       case(AnalysisInfo::measurementtypes::BON):
+       case(AnalysisInfo::measurementtypeEnum::BON):
          descriptionStream << "Bond     " << analysisInfo.measurementEntries[j].atomindices[0] << " " << analysisInfo.measurementEntries[j].atomindices[1] << "     ";
          break;
-       case(AnalysisInfo::measurementtypes::ANG):
+       case(AnalysisInfo::measurementtypeEnum::ANG):
          descriptionStream << "Angle    " << analysisInfo.measurementEntries[j].atomindices[0] << " " << analysisInfo.measurementEntries[j].atomindices[1] << " " << analysisInfo.measurementEntries[j].atomindices[2] << "   ";
          break;
-       case(AnalysisInfo::measurementtypes::DIH):
+       case(AnalysisInfo::measurementtypeEnum::DIH):
          descriptionStream << "Dihedral " << analysisInfo.measurementEntries[j].atomindices[0] << " " << analysisInfo.measurementEntries[j].atomindices[1] << " " << analysisInfo.measurementEntries[j].atomindices[2] << " " << analysisInfo.measurementEntries[j].atomindices[3] << " ";
          break;
      }

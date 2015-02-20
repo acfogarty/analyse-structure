@@ -1,5 +1,6 @@
 /*** input trajectory file ***/
-test.gro !grofilename
+GRO !coordfiletype GRO or PDB
+test.gro !coordfilename
  !natoms
  !nframes
 /*** distances,angles and dihedrals to calculate ***/

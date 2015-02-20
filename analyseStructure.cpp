@@ -11,7 +11,6 @@
 void AnalysisInfo::getInputData()
 {
     std::string line;
-    std::string temp;
     std::getline (std::cin,line); //skip comments
     std::cin>>nmeasurements;
     std::cin.ignore(10000,'\n');
@@ -19,10 +18,10 @@ void AnalysisInfo::getInputData()
     for (int i=0;i<nmeasurements;i++)
     {
        MeasurementEntry tempEntry;
-       std::string line,enumstring;
+       std::string line,temp;
        int itemp;
-       AnalysisInfo::measurementtypes itemp2;
-     
+    
+       //read by line 
        std::getline(std::cin, line);
        std::istringstream iss(line);
  
@@ -34,7 +33,7 @@ void AnalysisInfo::getInputData()
        tempEntry.mtype = std::find(mtypestrings.begin(), mtypestrings.end(), temp) - mtypestrings.begin();
 
        //get atom indices
-       while ( iss >> itemp) 
+       while (iss >> itemp) 
        {    
          tempEntry.atomindices.push_back(itemp);
        }
@@ -50,12 +49,16 @@ void AnalysisInfo::getInputData()
 
 void System::getInputData()
 {
-    std::string line;
+    std::string line,temp;
+    char coordFileName[50];
     std::getline (std::cin,line); //skip comments
     std::getline (std::cin,line); //skip comments
-    char grofilename[50];
-    std::cin>>grofilename;
-    inputGroStream.open(grofilename,std::ifstream::in);
+    std::cin>>temp;
+    if (temp=="PDB") {std::cout<<"Warning, not using PBC for pdb filetype. (Assuming infinite cell)."<<std::endl;}
+    coordFileType = std::find(filetypestrings.begin(), filetypestrings.end(), temp) - filetypestrings.begin();
+    std::cin.ignore(10000,'\n');
+    std::cin>>coordFileName;
+    inputCoordStream.open(coordFileName,std::ifstream::in);
     std::cin.ignore(10000,'\n');
     std::cin>>natoms;
     std::cout<<"natoms"<<natoms<<std::endl;
@@ -78,25 +81,41 @@ void System::initializeSystem()
 void System::readGroFrame(bool velocitiesPresent)
 {
    std::string line;
-   std::getline(inputGroStream, line); //skip comments
+   std::getline(inputCoordStream, line); //skip comments
    int natomstemp;
-   inputGroStream >> natomstemp;
+   inputCoordStream >> natomstemp;
    if (natomstemp!=natoms) {
      std::cout<<"Error! Natoms in gro file not equal to natoms in input file"<<std::endl;
    }
-   inputGroStream.ignore(10000,'\n');
+   inputCoordStream.ignore(10000,'\n');
    for (int i=0;i<natoms;i++)
    {
-      std::getline(inputGroStream, line);
+      std::getline(inputCoordStream, line);
       atomEntries.at(i).coords[0]=stof(line.substr(20,8));
       atomEntries.at(i).coords[1]=stof(line.substr(28,8));
       atomEntries.at(i).coords[2]=stof(line.substr(36,8));
       if (velocitiesPresent) 
-      {
+      { 
+        //TODO
       }
    }
-   inputGroStream >> cell[0] >> cell[1] >> cell[2];
-   inputGroStream.ignore(10000,'\n');
+   inputCoordStream >> cell[0] >> cell[1] >> cell[2];
+   inputCoordStream.ignore(10000,'\n');
+};
+
+void System::readPdbFrame()
+{
+   std::string line;
+   for (int i=0;i<natoms;i++)
+   {
+      std::getline(inputCoordStream, line);
+      atomEntries.at(i).coords[0]=stof(line.substr(30,8));
+      atomEntries.at(i).coords[1]=stof(line.substr(38,8));
+      atomEntries.at(i).coords[2]=stof(line.substr(46,8));
+   }
+   cell[0]=10000.0;
+   cell[1]=10000.0;
+   cell[2]=10000.0;
 };
 
 double Calc::calcDist(std::vector<AtomEntry> atomEntries, double cell[3], std::vector<int> indices)
@@ -121,6 +140,7 @@ double Calc::calcDist(std::vector<AtomEntry> atomEntries, double cell[3], std::v
    dy = dy - rint(dy/cell[1])*cell[1];
    dz = dz - rint(dz/cell[2])*cell[2];
    dist=sqrtf(dx*dx + dy*dy + dz*dz);
+//std::cout<<x1<<" "<<x2<<" "<<dx<<" "<<dist<<std::endl;
 
    return dist;
 };

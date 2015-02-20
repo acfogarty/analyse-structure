@@ -40,11 +40,15 @@ class System
       void getInputData();
       void initializeSystem();
       void readGroFrame(bool velocitiesPresent);
+      void readPdbFrame();
 
       std::vector<AtomEntry> atomEntries;
       double cell[3];
       int natoms,nframes,nskip;
-      std::ifstream inputGroStream;
+      std::ifstream inputCoordStream;
+      enum filetypeEnum {GRO, PDB};
+      int coordFileType;
+      std::vector<std::string> filetypestrings = {"GRO", "PDB"};
       
   private:
       AtomEntry emptyAtomEntry; //should put in zeroes TODO
@@ -56,7 +60,7 @@ class AnalysisInfo
     int nmeasurements;
     void getInputData();
     std::vector<MeasurementEntry> measurementEntries;
-    enum measurementtypes {BON, ANG, DIH };
+    enum measurementtypeEnum {BON, ANG, DIH };
     std::vector<std::string> mtypestrings = {"BON", "ANG", "DIH"};
   private:
 };
