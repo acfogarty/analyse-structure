@@ -1,9 +1,11 @@
-/*** input trajectory file ***/
-GRO !coordfiletype GRO or PDB
-test.gro !coordfilename
- !natoms
- !nframes
+/*** input file for analyseStructure.exe ***/
+/*** trajectory file ***/
+DCD !coordfiletype GRO/PDB/DCD
+tip4p-tmao_npt_298K.dcd !coordfilename
+1974 !natoms
+1 !nframes
+20 !nskip
 /*** distances,angles and dihedrals to calculate ***/
- !nmeasurements
+1 !nmeasurements
 /*** type, indices of atoms involved ***/
 DIH 1 2 3 4

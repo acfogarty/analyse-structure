@@ -21,8 +21,7 @@ struct MeasurementEntry
 
 class Calc 
 {
-  
-  public:
+   public:
       static double calcDist(std::vector<AtomEntry> atomEntries, double cell[3], std::vector<int> indices);
       //static double calcDist(std::vector<AtomEntry> atomEntries, std::vector<int> indices);
       static double calcAngle(std::vector<AtomEntry> atomEntries, double cell[3], std::vector<int> indices);
@@ -33,36 +32,37 @@ class Calc
 
 class System 
 {
-  
-  public:
+   public:
       //System();
       //~System();
       void getInputData();
       void initializeSystem();
       void readGroFrame(bool velocitiesPresent);
       void readPdbFrame();
+      void readDcdFrame();
+      void readDcdHeader();
 
       std::vector<AtomEntry> atomEntries;
       double cell[3];
       int natoms,nframes,nskip;
       std::ifstream inputCoordStream;
-      enum filetypeEnum {GRO, PDB};
+      enum filetypeEnum {GRO, PDB, DCD};
       int coordFileType;
-      std::vector<std::string> filetypestrings = {"GRO", "PDB"};
+      std::vector<std::string> filetypestrings = {"GRO", "PDB", "DCD"};
       
-  private:
-      AtomEntry emptyAtomEntry; //should put in zeroes TODO
+   private:
+      AtomEntry emptyAtomEntry; //should initialise with zeroes TODO
 };
 
 class AnalysisInfo
 {
-  public:
-    int nmeasurements;
-    void getInputData();
-    std::vector<MeasurementEntry> measurementEntries;
-    enum measurementtypeEnum {BON, ANG, DIH };
-    std::vector<std::string> mtypestrings = {"BON", "ANG", "DIH"};
-  private:
+   public:
+      int nmeasurements;
+      void getInputData();
+      std::vector<MeasurementEntry> measurementEntries;
+      enum measurementtypeEnum {BON, ANG, DIH };
+      std::vector<std::string> mtypestrings = {"BON", "ANG", "DIH"};
+   private:
 };
 
 

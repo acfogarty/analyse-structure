@@ -1,5 +1,5 @@
 #include "analyseStructure.h"
-#include "Vec3D.hpp"
+#include "Vec3D.h"
 #include <sstream>
 #include <string>
 #include <fstream>
@@ -10,73 +10,80 @@
 
 void AnalysisInfo::getInputData()
 {
-    std::string line;
-    std::getline (std::cin,line); //skip comments
-    std::cin>>nmeasurements;
-    std::cin.ignore(10000,'\n');
-    std::getline (std::cin,line); //skip comments
-    for (int i=0;i<nmeasurements;i++)
-    {
-       MeasurementEntry tempEntry;
-       std::string line,temp;
-       int itemp;
-    
-       //read by line 
-       std::getline(std::cin, line);
-       std::istringstream iss(line);
+   std::string line;
+   std::getline (std::cin,line); //skip comments
+   std::cin>>nmeasurements;
+   std::cin.ignore(10000,'\n');
+   std::getline (std::cin,line); //skip comments
+   for (int i=0;i<nmeasurements;i++)
+   {
+      MeasurementEntry tempEntry;
+      std::string line,temp;
+      int itemp;
+   
+      //read by line 
+      std::getline(std::cin, line);
+      std::istringstream iss(line);
  
-       //get filename
-       iss>>tempEntry.filename;
+      //get filename
+      iss>>tempEntry.filename;
 
-       //get type (BON,ANG or DIH)
-       iss>>temp;
-       tempEntry.mtype = std::find(mtypestrings.begin(), mtypestrings.end(), temp) - mtypestrings.begin();
+      //get type (BON,ANG or DIH)
+      iss>>temp;
+      tempEntry.mtype = std::find(mtypestrings.begin(), mtypestrings.end(), temp) - mtypestrings.begin();
 
-       //get atom indices
-       while (iss >> itemp) 
-       {    
+      //get atom indices
+      while (iss >> itemp) 
+      {    
          tempEntry.atomindices.push_back(itemp);
-       }
+      }
 
-       if (tempEntry.atomindices.size() != (tempEntry.mtype+2))
-       {
+      if (tempEntry.atomindices.size() != (tempEntry.mtype+2))
+      {
          std::cout<<"Error! "<<temp<<" entries should have "<<tempEntry.mtype+2<<" atom indices"<<std::endl;
-       }
+      }
 
-       measurementEntries.push_back(tempEntry);
-    }
-};
+      measurementEntries.push_back(tempEntry);
+   }
+}
 
 void System::getInputData()
 {
-    std::string line,temp;
-    char coordFileName[50];
-    std::getline (std::cin,line); //skip comments
-    std::getline (std::cin,line); //skip comments
-    std::cin>>temp;
-    if (temp=="PDB") {std::cout<<"Warning, not using PBC for pdb filetype. (Assuming infinite cell)."<<std::endl;}
-    coordFileType = std::find(filetypestrings.begin(), filetypestrings.end(), temp) - filetypestrings.begin();
-    std::cin.ignore(10000,'\n');
-    std::cin>>coordFileName;
-    inputCoordStream.open(coordFileName,std::ifstream::in);
-    std::cin.ignore(10000,'\n');
-    std::cin>>natoms;
-    std::cout<<"natoms"<<natoms<<std::endl;
-    std::cin.ignore(10000,'\n');
-    std::cin>>nframes;
-    std::cout<<"nframes"<<nframes<<std::endl;
-    std::cin.ignore(10000,'\n');
-    std::cin>>nskip;
-    std::cin.ignore(10000,'\n');
-};
+   std::string line,filetypeString;
+   char coordFileName[50];
+   std::getline (std::cin,line); //skip comments
+   std::getline (std::cin,line); //skip comments
+   std::cin>>filetypeString;
+   if (filetypeString=="PDB") {std::cout<<"Warning, not using PBC for pdb filetype. (Assuming infinite cell)."<<std::endl;}
+   coordFileType = std::find(filetypestrings.begin(), filetypestrings.end(), filetypeString) - filetypestrings.begin();
+   std::cin.ignore(10000,'\n');
+   std::cin>>coordFileName;
+   if (filetypeString=="DCD")
+   {
+      inputCoordStream.open(coordFileName,std::ifstream::in | std::ios::binary);
+   }
+   else
+   {
+      inputCoordStream.open(coordFileName,std::ifstream::in);
+   }
+   std::cin.ignore(10000,'\n');
+   std::cin>>natoms;
+   std::cout<<"natoms"<<natoms<<std::endl;
+   std::cin.ignore(10000,'\n');
+   std::cin>>nframes;
+   std::cout<<"nframes"<<nframes<<std::endl;
+   std::cin.ignore(10000,'\n');
+   std::cin>>nskip;
+   std::cin.ignore(10000,'\n');
+}
 
 void System::initializeSystem()
 {
-    for (int i=0;i<natoms;i++)
-    {
+   for (int i=0;i<natoms;i++)
+   {
       atomEntries.push_back(emptyAtomEntry); 
-    }
-};
+   }
+}
 
 void System::readGroFrame(bool velocitiesPresent)
 {
@@ -85,7 +92,7 @@ void System::readGroFrame(bool velocitiesPresent)
    int natomstemp;
    inputCoordStream >> natomstemp;
    if (natomstemp!=natoms) {
-     std::cout<<"Error! Natoms in gro file not equal to natoms in input file"<<std::endl;
+      std::cout<<"Error! Natoms in gro file not equal to natoms in input file"<<std::endl;
    }
    inputCoordStream.ignore(10000,'\n');
    for (int i=0;i<natoms;i++)
@@ -101,7 +108,7 @@ void System::readGroFrame(bool velocitiesPresent)
    }
    inputCoordStream >> cell[0] >> cell[1] >> cell[2];
    inputCoordStream.ignore(10000,'\n');
-};
+}
 
 void System::readPdbFrame()
 {
@@ -116,7 +123,83 @@ void System::readPdbFrame()
    cell[0]=10000.0;
    cell[1]=10000.0;
    cell[2]=10000.0;
-};
+}
+
+void System::readDcdHeader()
+{
+   //format as given in http://code.zgib.net/mp3/doc/dcd.txt
+   char onebyte;
+   int idum,ntitle;
+   int sizeDcdInt = 4;
+   if (sizeof(int) != sizeDcdInt) {std::cout<<"Error size of int here != size of int in DCD file (4 bytes)"<<std::endl;}
+   
+   //first header section
+   int headerByteSize = 92;
+   int nIntegers = headerByteSize/sizeDcdInt;
+   for(int i=0;i<nIntegers;i++)
+   {
+      inputCoordStream.read(reinterpret_cast<char*>(&idum),sizeof(idum));
+      //std::cout<<idum<<std::endl;
+   }
+   //std::cout<<"end of header, part 1"<<std::endl;
+  
+   //second header section
+   inputCoordStream.read(reinterpret_cast<char*>(&ntitle),sizeof(ntitle));
+   int lengthTitleLine=80;
+   int nlines=(ntitle-sizeDcdInt)/lengthTitleLine;
+   nIntegers = lengthTitleLine/sizeDcdInt;
+   for(int i=0;i<nlines;i++)
+   {
+      for(int j=0;j<nIntegers;j++)
+      {
+         inputCoordStream.read(reinterpret_cast<char*>(&idum),sizeof(idum)); 
+      }
+   }
+   inputCoordStream.read(reinterpret_cast<char*>(&ntitle),sizeof(ntitle));
+   //std::cout<<"end of header, part 2"<<std::endl;
+
+   //third header section
+   int nEntries = 4;
+   for(int i=0;i<nEntries;i++)
+   {
+      inputCoordStream.read(reinterpret_cast<char*>(&idum),sizeof(idum));
+      //std::cout<<idum<<std::endl;
+   }
+   //std::cout<<"end of header, part 3"<<std::endl;
+}
+
+void System::readDcdFrame()
+{
+   double tempdble;
+   float tempflt;
+   int idum; //assumes size is 4 bytes, already checked in readDcdHeader
+   double table[6];
+   inputCoordStream.read(reinterpret_cast<char*>(&idum),sizeof(idum)); 
+std::cout<<"start cell"<<std::endl;
+   for (int j=0;j<6;j++)
+   { 
+      inputCoordStream.read(reinterpret_cast<char*>(&tempdble), sizeof tempdble);
+      std::cout<<tempdble<<std::endl;
+      table[j]=tempdble;
+   }
+std::cout<<"end cell"<<std::endl;
+   cell[0]=table[0];
+   cell[1]=table[2];
+   cell[2]=table[5];
+   inputCoordStream.read(reinterpret_cast<char*>(&idum),sizeof(idum)); 
+   for (int j=0;j<3;j++)
+   {
+      inputCoordStream.read(reinterpret_cast<char*>(&idum),sizeof(idum)); //should be natoms*4
+      for (int i=0;i<natoms;i++)
+      {
+         //inputCoordStream.read(reinterpret_cast<char*>(&tempdble), sizeof tempdble);
+         inputCoordStream.read(reinterpret_cast<char*>(&tempflt), sizeof tempflt);
+         //std::cout<<tempflt<<std::endl;
+         atomEntries.at(i).coords[j]=tempflt; 
+      }
+      inputCoordStream.read(reinterpret_cast<char*>(&idum),sizeof(idum)); //should be natoms*4
+   }
+}
 
 double Calc::calcDist(std::vector<AtomEntry> atomEntries, double cell[3], std::vector<int> indices)
 {
@@ -140,10 +223,9 @@ double Calc::calcDist(std::vector<AtomEntry> atomEntries, double cell[3], std::v
    dy = dy - rint(dy/cell[1])*cell[1];
    dz = dz - rint(dz/cell[2])*cell[2];
    dist=sqrtf(dx*dx + dy*dy + dz*dz);
-//std::cout<<x1<<" "<<x2<<" "<<dx<<" "<<dist<<std::endl;
 
    return dist;
-};
+}
 
 double Calc::calcAngle(std::vector<AtomEntry> atomEntries, double cell[3], std::vector<int> indices)
 {
@@ -176,7 +258,7 @@ double Calc::calcAngle(std::vector<AtomEntry> atomEntries, double cell[3], std::
    //theta=theta/pi*180.0;
    theta=theta/3.14159*180.0;
    return theta;
-};
+}
 
 double Calc::calcDihedral(std::vector<AtomEntry> atomEntries, double cell[3], std::vector<int> indices)
 {
@@ -232,5 +314,5 @@ double Calc::calcDihedral(std::vector<AtomEntry> atomEntries, double cell[3], st
    phi=phi/3.14159*180.0;
    return phi;
 
-};
+}
 
