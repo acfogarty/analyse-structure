@@ -29,11 +29,12 @@ main()
    for (int j=0;j<analysisInfo.nmeasurements;j++)
    {
       outputFileStreams[j] = new std::ofstream(analysisInfo.measurementEntries[j].filename);
+      *outputFileStreams[j] << "#time in ps; value" << std::endl;
    }
 
    if (system.coordFileType==System::filetypeEnum::DCD) {system.readDcdHeader();}
  
-   for (int i=0;i<system.nframes;i++)
+   for (int i=0;i<system.nframesTotal;i++)
    {
       switch(system.coordFileType)
       {
@@ -50,11 +51,12 @@ main()
             std::cout<<"Error in main!"<<std::endl;
             //TODO
       }
+      system.trackFrame();
       if ((i%system.nskip) != 0) continue;
       ncount+=1;
       for (int j=0;j<analysisInfo.nmeasurements;j++)
       {
-         *outputFileStreams[j] << i+1 << " ";
+         *outputFileStreams[j] << (i+1)*system.timestep << " ";
          //calculation the distances, angles and dihedrals specified in analysisInfo 
          double value;
          std::stringstream descriptionStream;
@@ -101,6 +103,6 @@ main()
             descriptionStream << "Dihedral " << analysisInfo.measurementEntries[j].atomindices[0] << " " << analysisInfo.measurementEntries[j].atomindices[1] << " " << analysisInfo.measurementEntries[j].atomindices[2] << " " << analysisInfo.measurementEntries[j].atomindices[3] << " ";
             break;
       }
-   std::cout<<"# "<<descriptionStream.str()<<" "<<avevalues[j]<<" stdev "<<stdev[j]<<std::endl;
+   std::cout<<descriptionStream.str()<<" "<<avevalues[j]<<" stdev "<<stdev[j]<<std::endl;
    } //loop over nmeasurements
 }

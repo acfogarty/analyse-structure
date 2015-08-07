@@ -1,11 +1,28 @@
 /*** input file for analyseStructure.exe ***/
 /*** trajectory file ***/
-DCD !coordfiletype GRO/PDB/DCD
-tip4p-tmao_npt_298K.dcd !coordfilename
-1974 !natoms
-1 !nframes
-20 !nskip
+GRO !coordfiletype, GRO, PDB or DCD
+4 !number of trajectory files
+../trj-run1.gro 946 !name of traj file, nframes in traj file
+../trj-run2.gro 939 
+../trj-run3.gro 938
+../trj-run4.gro 951
+32854 !natoms
+0.25 !timestep btwn frames in ps
+4 !nskip, frequency at which to skip over frames in traj files during analysis
 /*** distances,angles and dihedrals to calculate ***/
-1 !nmeasurements
-/*** type, indices of atoms involved ***/
-DIH 1 2 3 4
+14 !nmeasurements
+/*** output filename, type [BON, ANG or DIH], indices of atoms involved ***/
+dist_ASN59CA_TRP63CA.dat    BON 256 298 # comment
+dist_ALA107CA_TRP63CA.dat   BON 349 298    
+dist_ALA107CA_ASN59CA.dat   BON 349 256  
+dist_ASN59CA_TRP62CA.dat    BON 256 274 
+dist_ALA107CA_TRP62CA.dat   BON 349 274 
+dist_TRP63CA_TRP62CA.dat    BON 298 274 
+dih_TRP63CACBCGCD2.dat     DIH 298 300 303 317 # comment
+dih_TRP62CACBCGCD2.dat     DIH 274 276 279 293 
+dist_ALA107O_TRP63HE1.dat  BON 356 307  
+dist_ASN59H_TRP63HE1.dat   BON 255 307
+dist_ALA107O_ASN59H.dat    BON 356 255
+dist_ALA107O_TRP62HE1.dat  BON 356 283
+dist_ASN59H_TRP62HE1.dat   BON 255 283
+dist_TRP62HE1_TRP63HE1.dat BON 283 307

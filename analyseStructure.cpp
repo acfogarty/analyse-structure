@@ -7,6 +7,27 @@
 #include <cstdlib>
 #include <algorithm>
 
+//contains classes:
+
+//AnalysisInfo
+//information about which bonds, angles or dihedrals should be calculated
+//methods:
+//  getInputData()
+
+//System
+//information about the system: number of atoms, size of simulation box, details of trajectory file(s)
+//methods:
+//  getInputData()
+//  initializeSystem()
+//  readGroFrame()
+//  readPdbFrame()
+//  readDcdHeader()
+//  readDcdFrame()
+
+//Calc
+//  calcDist()
+//  calcAngle()
+//  calcDihedral()
 
 void AnalysisInfo::getInputData()
 {
@@ -51,27 +72,37 @@ void System::getInputData()
 {
    std::string line,filetypeString;
    char coordFileName[50];
+   int ntemp;
    std::getline (std::cin,line); //skip comments
    std::getline (std::cin,line); //skip comments
    std::cin>>filetypeString;
    if (filetypeString=="PDB") {std::cout<<"Warning, not using PBC for pdb filetype. (Assuming infinite cell)."<<std::endl;}
-   coordFileType = std::find(filetypestrings.begin(), filetypestrings.end(), filetypeString) - filetypestrings.begin();
+   coordFileType = std::find(filetypestrings.begin(), filetypestrings.end(), filetypeString) - filetypestrings.begin(); //convert string to int
    std::cin.ignore(10000,'\n');
-   std::cin>>coordFileName;
-   if (filetypeString=="DCD")
-   {
-      inputCoordStream.open(coordFileName,std::ifstream::in | std::ios::binary);
-   }
-   else
-   {
-      inputCoordStream.open(coordFileName,std::ifstream::in);
-   }
+   std::cin>>ntraj;
    std::cin.ignore(10000,'\n');
+   for (int i=0;i<ntraj;i++) {
+      std::cin>>coordFileName;
+      std::ifstream* f;
+      if (filetypeString=="DCD")
+      {
+         //inputCoordStream.open(coordFileName,std::ifstream::in | std::ios::binary);
+         f = new std::ifstream(coordFileName,std::ifstream::in | std::ios::binary);
+      }
+      else
+      {
+         //inputCoordStream.open(coordFileName,std::ifstream::in);
+         f = new std::ifstream(coordFileName,std::ifstream::in);
+      }
+      inputCoordStreams.push_back(f); 
+      std::cin>>ntemp;
+      nframes.push_back(ntemp);
+      std::cin.ignore(10000,'\n');
+   }
+   nframesTotal = std::accumulate(nframes.begin(), nframes.end(), 0);
    std::cin>>natoms;
-   std::cout<<"natoms"<<natoms<<std::endl;
    std::cin.ignore(10000,'\n');
-   std::cin>>nframes;
-   std::cout<<"nframes"<<nframes<<std::endl;
+   std::cin>>timestep;
    std::cin.ignore(10000,'\n');
    std::cin>>nskip;
    std::cin.ignore(10000,'\n');
@@ -83,21 +114,33 @@ void System::initializeSystem()
    {
       atomEntries.push_back(emptyAtomEntry); 
    }
+   currentTraj = 0; //first trajectory file stream in inputCoordStreams
+   iframe = 0; //first frame in trajectory file stream 
+}
+
+void System::trackFrame()
+{
+   iframe += 1;
+   if (iframe==nframes[currentTraj]) //move on to next trajectory file
+   {
+      iframe = 0;
+      currentTraj += 1;
+   } 
 }
 
 void System::readGroFrame(bool velocitiesPresent)
 {
    std::string line;
-   std::getline(inputCoordStream, line); //skip comments
+   std::getline(*inputCoordStreams[currentTraj], line); //skip comments
    int natomstemp;
-   inputCoordStream >> natomstemp;
+   *inputCoordStreams[currentTraj] >> natomstemp;
    if (natomstemp!=natoms) {
-      std::cout<<"Error! Natoms in gro file not equal to natoms in input file"<<std::endl;
+      std::cout<<"Error! Natoms in gro file "<<natomstemp<<"not equal to natoms in input file"<<natoms<<std::endl;
    }
-   inputCoordStream.ignore(10000,'\n');
+   inputCoordStreams[currentTraj]->ignore(10000,'\n');
    for (int i=0;i<natoms;i++)
    {
-      std::getline(inputCoordStream, line);
+      std::getline(*inputCoordStreams[currentTraj], line);
       atomEntries.at(i).coords[0]=stof(line.substr(20,8));
       atomEntries.at(i).coords[1]=stof(line.substr(28,8));
       atomEntries.at(i).coords[2]=stof(line.substr(36,8));
@@ -106,8 +149,8 @@ void System::readGroFrame(bool velocitiesPresent)
         //TODO
       }
    }
-   inputCoordStream >> cell[0] >> cell[1] >> cell[2];
-   inputCoordStream.ignore(10000,'\n');
+   *inputCoordStreams[currentTraj] >> cell[0] >> cell[1] >> cell[2];
+   inputCoordStreams[currentTraj]->ignore(10000,'\n');
 }
 
 void System::readPdbFrame()
@@ -115,7 +158,7 @@ void System::readPdbFrame()
    std::string line;
    for (int i=0;i<natoms;i++)
    {
-      std::getline(inputCoordStream, line);
+      std::getline(*inputCoordStreams[currentTraj], line);
       atomEntries.at(i).coords[0]=stof(line.substr(30,8));
       atomEntries.at(i).coords[1]=stof(line.substr(38,8));
       atomEntries.at(i).coords[2]=stof(line.substr(46,8));
@@ -138,13 +181,13 @@ void System::readDcdHeader()
    int nIntegers = headerByteSize/sizeDcdInt;
    for(int i=0;i<nIntegers;i++)
    {
-      inputCoordStream.read(reinterpret_cast<char*>(&idum),sizeof(idum));
+      inputCoordStreams[currentTraj]->read(reinterpret_cast<char*>(&idum),sizeof(idum));
       //std::cout<<idum<<std::endl;
    }
    //std::cout<<"end of header, part 1"<<std::endl;
   
    //second header section
-   inputCoordStream.read(reinterpret_cast<char*>(&ntitle),sizeof(ntitle));
+   inputCoordStreams[currentTraj]->read(reinterpret_cast<char*>(&ntitle),sizeof(ntitle));
    int lengthTitleLine=80;
    int nlines=(ntitle-sizeDcdInt)/lengthTitleLine;
    nIntegers = lengthTitleLine/sizeDcdInt;
@@ -152,17 +195,17 @@ void System::readDcdHeader()
    {
       for(int j=0;j<nIntegers;j++)
       {
-         inputCoordStream.read(reinterpret_cast<char*>(&idum),sizeof(idum)); 
+         inputCoordStreams[currentTraj]->read(reinterpret_cast<char*>(&idum),sizeof(idum)); 
       }
    }
-   inputCoordStream.read(reinterpret_cast<char*>(&ntitle),sizeof(ntitle));
+   inputCoordStreams[currentTraj]->read(reinterpret_cast<char*>(&ntitle),sizeof(ntitle));
    //std::cout<<"end of header, part 2"<<std::endl;
 
    //third header section
    int nEntries = 4;
    for(int i=0;i<nEntries;i++)
    {
-      inputCoordStream.read(reinterpret_cast<char*>(&idum),sizeof(idum));
+      inputCoordStreams[currentTraj]->read(reinterpret_cast<char*>(&idum),sizeof(idum));
       //std::cout<<idum<<std::endl;
    }
    //std::cout<<"end of header, part 3"<<std::endl;
@@ -174,11 +217,11 @@ void System::readDcdFrame()
    float tempflt;
    int idum; //assumes size is 4 bytes, already checked in readDcdHeader
    double table[6];
-   inputCoordStream.read(reinterpret_cast<char*>(&idum),sizeof(idum)); 
+   inputCoordStreams[currentTraj]->read(reinterpret_cast<char*>(&idum),sizeof(idum)); 
 std::cout<<"start cell"<<std::endl;
    for (int j=0;j<6;j++)
    { 
-      inputCoordStream.read(reinterpret_cast<char*>(&tempdble), sizeof tempdble);
+      inputCoordStreams[currentTraj]->read(reinterpret_cast<char*>(&tempdble), sizeof tempdble);
       std::cout<<tempdble<<std::endl;
       table[j]=tempdble;
    }
@@ -186,18 +229,18 @@ std::cout<<"end cell"<<std::endl;
    cell[0]=table[0];
    cell[1]=table[2];
    cell[2]=table[5];
-   inputCoordStream.read(reinterpret_cast<char*>(&idum),sizeof(idum)); 
+   inputCoordStreams[currentTraj]->read(reinterpret_cast<char*>(&idum),sizeof(idum)); 
    for (int j=0;j<3;j++)
    {
-      inputCoordStream.read(reinterpret_cast<char*>(&idum),sizeof(idum)); //should be natoms*4
+      inputCoordStreams[currentTraj]->read(reinterpret_cast<char*>(&idum),sizeof(idum)); //should be natoms*4
       for (int i=0;i<natoms;i++)
       {
          //inputCoordStream.read(reinterpret_cast<char*>(&tempdble), sizeof tempdble);
-         inputCoordStream.read(reinterpret_cast<char*>(&tempflt), sizeof tempflt);
+         inputCoordStreams[currentTraj]->read(reinterpret_cast<char*>(&tempflt), sizeof tempflt);
          //std::cout<<tempflt<<std::endl;
          atomEntries.at(i).coords[j]=tempflt; 
       }
-      inputCoordStream.read(reinterpret_cast<char*>(&idum),sizeof(idum)); //should be natoms*4
+      inputCoordStreams[currentTraj]->read(reinterpret_cast<char*>(&idum),sizeof(idum)); //should be natoms*4
    }
 }
 

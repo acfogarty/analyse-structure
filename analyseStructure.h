@@ -41,11 +41,16 @@ class System
       void readPdbFrame();
       void readDcdFrame();
       void readDcdHeader();
+      void trackFrame(); //keeps track of which frame is being read from which trajectory
 
       std::vector<AtomEntry> atomEntries;
-      double cell[3];
-      int natoms,nframes,nskip;
-      std::ifstream inputCoordStream;
+      double cell[3]; //simulation box size
+      int natoms,nskip,ntraj,nframesTotal; //number of atoms, frequency at which to sample trajectory frames, number of trajectory files, ntotal number of frames in all trajectory files
+      double timestep; //timestep between trajectory frames
+      std::vector<std::ifstream*> inputCoordStreams; //vector of streams for each trajectory file
+      std::vector<int> nframes; //number of frames in each trajectory file in inputCoordStreams
+      int currentTraj; //index of current stream in inputCoordStreams
+      int iframe; //index of current frame in current stream
       enum filetypeEnum {GRO, PDB, DCD};
       int coordFileType;
       std::vector<std::string> filetypestrings = {"GRO", "PDB", "DCD"};

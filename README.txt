@@ -11,6 +11,7 @@ Sample input-analyseStructure:
 ../trj.gro !grofilename
 32648 !natoms
 100 !nframes
+100 !timestep between frames in ps
 5 !nskip (only analyse every 5th frame)
 /*** distances,angles and dihedrals to calculate ***/
 3 !nmeasurements

@@ -1,7 +1,9 @@
 #CPPFLAGS=-g $(shell root-config --cflags)
+#CPPFLAGS=-std=c++11 -g
 CPPFLAGS=-std=c++11
 #LDFLAGS=-g $(shell root-config --ldflags)
 #LDLIBS=$(shell root-config --libs)
+#LDFLAGS=-g
 
 SRCS=main.cpp analyseStructure.cpp 
 #OBJS=$(subst .cc,.o,$(SRCS))
