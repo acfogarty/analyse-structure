@@ -8,15 +8,22 @@ Sample input-analyseStructure:
 
 /*** input file for analyseStructure.exe ***/
 /*** trajectory file ***/
-../trj.gro !grofilename
-32648 !natoms
-100 !nframes
-100 !timestep between frames in ps
-5 !nskip (only analyse every 5th frame)
-/*** distances,angles and dihedrals to calculate ***/
-3 !nmeasurements
-/* format: type (BON/ANG/DIH), indices of atoms involved */
-bond_1-2.dat BON 1 2
-angle_1-2-3.dat ANG 1 2 3
-dihedral_1-2-3-4.dat DIH 1 2 3 4
-
+GRO !coordfiletype, GRO, PDB or DCD
+4 !number of trajectory files
+../trj-run1.gro 946 !name of traj file, nframes in traj file
+../trj-run2.gro 939 
+../trj-run3.gro 938
+../trj-run4.gro 951
+32854 !natoms
+0.25 !timestep btwn frames in ps
+4 !nskip, frequency at which to skip over frames in traj files during analysis
+/*** distances, angles and dihedrals to calculate ***/
+7 !nmeasurements
+/*** output filename, type [BON, ANG or DIH], indices of atoms involved ***/
+dist_ASN59CA_TRP63CA.dat    BON 256 298 # comment
+dist_ALA107CA_TRP63CA.dat   BON 349 298    
+dist_ALA107CA_ASN59CA.dat   BON 349 256  
+dist_ASN59CA_TRP62CA.dat    BON 256 274 
+dist_ALA107CA_TRP62CA.dat   BON 349 274 
+dist_TRP63CA_TRP62CA.dat    BON 298 274 
+dih_TRP62CACBCGCD2.dat      DIH 274 276 279 293 
